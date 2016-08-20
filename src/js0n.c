@@ -19,15 +19,14 @@
 #define CAP(i) if(depth == 1) { if(val && !index) {*vlen = (size_t)((cur+i+1) - val); return val;}; if(klen && start) {index = (klen == (size_t)(cur-start) && strncmp(key,start,klen)==0) ? 0 : 2; start = 0;} }
 
 // this makes a single pass across the json bytes, using each byte as an index into a jump table to build an index and transition state
-char *js0n(const char *key, size_t klen,
-				 char *json, size_t jlen, size_t *vlen)
+char *js0n(const char *key, size_t klen, char *json, size_t jlen, size_t *vlen)
 {
 	char *val = 0;
 	char *cur, *end, *start;
 	size_t index = 1;
 	int depth = 0;
 	int utf8_remain = 0;
-	static void *gostruct[] = 
+	const static void * const gostruct[] = 
 	{
 		[0 ... 255] = &&l_bad,
 		['\t'] = &&l_loop, [' '] = &&l_loop, ['\r'] = &&l_loop, ['\n'] = &&l_loop,
@@ -39,7 +38,7 @@ char *js0n(const char *key, size_t klen,
 		[65 ... 90] = &&l_bare, // A-Z
 		[97 ... 122] = &&l_bare // a-z
 	};
-	static void *gobare[] = 
+	const static void * const gobare[] = 
 	{
 		[0 ... 31] = &&l_bad,
 		[32 ... 126] = &&l_loop, // could be more pedantic/validation-checking
@@ -47,7 +46,7 @@ char *js0n(const char *key, size_t klen,
 		[','] = &&l_unbare, [']'] = &&l_unbare, ['}'] = &&l_unbare, [':'] = &&l_unbare,
 		[127 ... 255] = &&l_bad
 	};
-	static void *gostring[] = 
+	const static void * const gostring[] = 
 	{
 		[0 ... 31] = &&l_bad, [127] = &&l_bad,
 		[32 ... 126] = &&l_loop,
@@ -58,19 +57,19 @@ char *js0n(const char *key, size_t klen,
 		[240 ... 247] = &&l_utf8_4,
 		[248 ... 255] = &&l_bad
 	};
-	static void *goutf8_continue[] =
+	const static void * const goutf8_continue[] =
 	{
 		[0 ... 127] = &&l_bad,
 		[128 ... 191] = &&l_utf_continue,
 		[192 ... 255] = &&l_bad
 	};
-	static void *goesc[] = 
+	const static void * const goesc[] = 
 	{
 		[0 ... 255] = &&l_bad,
 		['"'] = &&l_unesc, ['\\'] = &&l_unesc, ['/'] = &&l_unesc, ['b'] = &&l_unesc,
 		['f'] = &&l_unesc, ['n'] = &&l_unesc, ['r'] = &&l_unesc, ['t'] = &&l_unesc, ['u'] = &&l_unesc
 	};
-	void **go = gostruct;
+	const void * const * go = gostruct;
 	
 	if(!json || jlen <= 0 || !vlen) return 0;
 	*vlen = 0;
